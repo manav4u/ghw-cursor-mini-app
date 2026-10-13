@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tipwise — Tip Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-top: #e8f2ec;
+      --bg-bottom: #f4efe6;
+      --ink: #1a2e24;
+      --ink-muted: #5a6f64;
+      --surface: rgba(255, 255, 255, 0.72);
+      --surface-strong: #ffffff;
+      --border: rgba(26, 46, 36, 0.12);
+      --accent: #1f7a55;
+      --accent-soft: #d7efe4;
+      --result-bg: #1a2e24;
+      --result-ink: #f4efe6;
+      --result-muted: #a8c4b6;
+      --shadow: 0 18px 40px rgba(26, 46, 36, 0.08);
+      --focus: #1f7a55;
+      --toggle-track: #c9dbd1;
+      --toggle-knob: #ffffff;
+      --pattern: rgba(31, 122, 85, 0.06);
+    }
+
+    [data-theme="dark"] {
+      --bg-top: #0f1a15;
+      --bg-bottom: #16241d;
+      --ink: #e8f2ec;
+      --ink-muted: #9bb0a4;
+      --surface: rgba(28, 42, 35, 0.85);
+      --surface-strong: #1c2a23;
+      --border: rgba(232, 242, 236, 0.1);
+      --accent: #5ecf9a;
+      --accent-soft: #243830;
+      --result-bg: #0a1210;
+      --result-ink: #e8f2ec;
+      --result-muted: #8fad9d;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      --focus: #5ecf9a;
+      --toggle-track: #2f463b;
+      --toggle-knob: #e8f2ec;
+      --pattern: rgba(94, 207, 154, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      color-scheme: light;
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Manrope", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, var(--pattern), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, var(--pattern), transparent 45%),
+        linear-gradient(165deg, var(--bg-top), var(--bg-bottom));
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      transition: background 0.35s ease, color 0.25s ease;
+    }
+
+    .app {
+      width: min(100%, 420px);
+      animation: rise-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes rise-in {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .brand {
+      font-family: "Fraunces", serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--ink-muted);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .theme-toggle:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    .toggle-track {
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--toggle-track);
+      position: relative;
+      transition: background 0.25s ease;
+    }
+
+    .toggle-knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--toggle-knob);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    [data-theme="dark"] .toggle-knob {
+      transform: translateX(18px);
+    }
+
+    .panel {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .inputs {
+      padding: 1.5rem 1.5rem 1.25rem;
+      display: grid;
+      gap: 1.15rem;
+    }
+
+    label {
+      display: grid;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .field {
+      position: relative;
+    }
+
+    .field .prefix,
+    .field .suffix {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+
+    .field .prefix {
+      left: 0.9rem;
+    }
+
+    .field .suffix {
+      right: 0.9rem;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      appearance: textfield;
+      -moz-appearance: textfield;
+      border: 1px solid var(--border);
+      background: var(--surface-strong);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 0.85rem 2.2rem;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 600;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+
+    .preset {
+      border: 1px solid var(--border);
+      background: var(--surface-strong);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 0.55rem 0.25rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .preset:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .preset:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .preset.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    [data-theme="dark"] .preset.active {
+      color: #0f1a15;
+    }
+
+    .results {
+      background: var(--result-bg);
+      color: var(--result-ink);
+      padding: 1.35rem 1.5rem 1.5rem;
+      display: grid;
+      gap: 0.85rem;
+      transition: background 0.3s ease;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
+    .row span {
+      color: var(--result-muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .row strong {
+      font-family: "Fraunces", serif;
+      font-size: 1.35rem;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .row.primary strong {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .row strong.pulse {
+      animation: value-pulse 0.28s ease;
+    }
+
+    @keyframes value-pulse {
+      0% {
+        opacity: 0.55;
+        transform: translateY(3px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hint {
+      margin-top: 1rem;
+      text-align: center;
+      color: var(--ink-muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 400px) {
+      .brand {
+        font-size: 1.5rem;
+      }
+
+      .inputs,
+      .results {
+        padding-left: 1.15rem;
+        padding-right: 1.15rem;
+      }
+
+      .row.primary strong {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <h1 class="brand">Tipwise</h1>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
+        <span id="themeLabel">Dark</span>
+        <span class="toggle-track" aria-hidden="true">
+          <span class="toggle-knob"></span>
+        </span>
+      </button>
+    </div>
+
+    <div class="panel">
+      <form class="inputs" id="tipForm" autocomplete="off">
+        <label>
+          Bill amount
+          <span class="field">
+            <span class="prefix">$</span>
+            <input type="number" id="bill" name="bill" min="0" step="0.01" placeholder="0.00" value="86.50" />
+          </span>
+        </label>
+
+        <div>
+          <label for="tip">Tip percent</label>
+          <span class="field" style="margin-top: 0.45rem; display: block;">
+            <input type="number" id="tip" name="tip" min="0" max="100" step="1" value="18" />
+            <span class="suffix">%</span>
+          </span>
+          <div class="presets" style="margin-top: 0.55rem;" role="group" aria-label="Tip presets">
+            <button type="button" class="preset" data-tip="10">10%</button>
+            <button type="button" class="preset active" data-tip="18">18%</button>
+            <button type="button" class="preset" data-tip="20">20%</button>
+            <button type="button" class="preset" data-tip="25">25%</button>
+          </div>
+        </div>
+
+        <label>
+          Number of people
+          <span class="field">
+            <input type="number" id="people" name="people" min="1" step="1" value="2" style="padding-left: 0.9rem;" />
+          </span>
+        </label>
+      </form>
+
+      <div class="results" aria-live="polite">
+        <div class="row">
+          <span>Tip</span>
+          <strong id="tipAmount">$0.00</strong>
+        </div>
+        <div class="row">
+          <span>Total</span>
+          <strong id="totalAmount">$0.00</strong>
+        </div>
+        <div class="row primary">
+          <span>Per person</span>
+          <strong id="perPerson">$0.00</strong>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint">Split the bill without the awkward napkin math.</p>
+  </main>
+
+  <script>
+    const billInput = document.getElementById("bill");
+    const tipInput = document.getElementById("tip");
+    const peopleInput = document.getElementById("people");
+    const tipAmountEl = document.getElementById("tipAmount");
+    const totalAmountEl = document.getElementById("totalAmount");
+    const perPersonEl = document.getElementById("perPerson");
+    const presets = document.querySelectorAll(".preset");
+    const themeToggle = document.getElementById("themeToggle");
+    const themeLabel = document.getElementById("themeLabel");
+
+    const money = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+
+    function syncPresetActive() {
+      const tip = Number(tipInput.value);
+      presets.forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.tip) === tip);
+      });
+    }
+
+    function pulse(el) {
+      el.classList.remove("pulse");
+      void el.offsetWidth;
+      el.classList.add("pulse");
+    }
+
+    function calculate() {
+      const bill = Math.max(0, Number(billInput.value) || 0);
+      const tipPercent = Math.max(0, Number(tipInput.value) || 0);
+      const people = Math.max(1, Math.floor(Number(peopleInput.value) || 1));
+
+      if (Number(peopleInput.value) < 1) {
+        peopleInput.value = people;
+      }
+
+      const tip = bill * (tipPercent / 100);
+      const total = bill + tip;
+      const perPerson = total / people;
+
+      const nextTip = money.format(tip);
+      const nextTotal = money.format(total);
+      const nextPer = money.format(perPerson);
+
+      if (tipAmountEl.textContent !== nextTip) {
+        tipAmountEl.textContent = nextTip;
+        pulse(tipAmountEl);
+      }
+      if (totalAmountEl.textContent !== nextTotal) {
+        totalAmountEl.textContent = nextTotal;
+        pulse(totalAmountEl);
+      }
+      if (perPersonEl.textContent !== nextPer) {
+        perPersonEl.textContent = nextPer;
+        pulse(perPersonEl);
+      }
+
+      syncPresetActive();
+    }
+
+    [billInput, tipInput, peopleInput].forEach((input) => {
+      input.addEventListener("input", calculate);
+    });
+
+    presets.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        tipInput.value = btn.dataset.tip;
+        calculate();
+      });
+    });
+
+    function applyTheme(theme) {
+      const isDark = theme === "dark";
+      document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+      themeToggle.setAttribute("aria-pressed", String(isDark));
+      themeLabel.textContent = isDark ? "Light" : "Dark";
+      localStorage.setItem("tipwise-theme", isDark ? "dark" : "light");
+    }
+
+    themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      applyTheme(current === "dark" ? "light" : "dark");
+    });
+
+    const saved = localStorage.getItem("tipwise-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(saved || (prefersDark ? "dark" : "light"));
+
+    calculate();
+  </script>
+</body>
+</html>
